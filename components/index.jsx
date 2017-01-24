@@ -1,27 +1,31 @@
 import React, {Component} from 'react';
+import {Grid, Row, PageHeader, Button, Alert, FormGroup, ControlLabel, HelpBlock, FormControl} from 'react-bootstrap';
+import {InputGroup, Col, Form, Table, Tooltip, OverlayTrigger, Label} from 'react-bootstrap';
 import ReactDOM from 'react-dom';
 import md5 from 'md5';
 import _ from 'lodash';
 
-export default class Rollup extends Component {
+export default class IndexView extends Component {
   render() {
     if (location.hash) {
-      return <Rollupping />;
+      return <GameView />;
     } else {
-      return <NewGame />;
+      return <Grid>
+        <Row>
+          <PageHeader>
+            Rollup <small>基于去中心化技术实现完全公平公开的抽奖游戏</small>
+          </PageHeader>
+        </Row>
+        <Row>
+          <Button onClick={this.onCreate.bind(this)} bsStyle='primary' bsSize='large'>创建抽奖</Button>
+        </Row>
+        <Row>
+          <p>
+            源代码和原理解释见 <a href='https://github.com/jysperm/rollup'>GitHub</a>
+          </p>
+        </Row>
+      </Grid>;
     }
-  }
-}
-
-class NewGame extends Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    return <div>
-      <button type='button' onClick={this.onCreate.bind(this)}>Create game</button>
-    </div>;
   }
 
   onCreate() {
@@ -30,7 +34,7 @@ class NewGame extends Component {
   }
 }
 
-class Rollupping extends Component {
+class GameView extends Component {
   constructor(props) {
     super(props);
 
@@ -127,11 +131,10 @@ class Rollupping extends Component {
               return submitHash.secretNumber;
             })) {
               const secretNumbers = _.map(this.state.submitedHashs, 'secretNumber');
-              console.log(secretNumbers, _.map(this.state.submitedHashs, 'secretNumber'));
               const luckyHash = _.sortBy(secretNumbers).join();
-              console.log('luckyHash', _.sortBy(secretNumbers).join());
               const luckyNumber = parseInt(luckyHash.slice(-8), 16);
-              console.log('luckyNumber', parseInt(luckyHash.slice(-8), 16));
+
+              console.log(`luckyNumber is ${luckyNumber}`);
 
               this.setState({
                 state: 'finished',
@@ -160,36 +163,75 @@ class Rollupping extends Component {
       return Math.abs(secretNumber - this.state.luckyNumber);
     });
 
-    return <div>
-      My Name is <input value={this.state.name} onChange={this.onNameChange.bind(this)} />
-      <button type='button' onClick={this.onSubmit.bind(this)} disabled={this.state.state !== 'initially'}>Submit Name</button>
-      <button type='button' onClick={this.onConfirm.bind(this)} disabled={this.state.state !== 'submited'}>Confirm Ganmes</button>
-      <div>
-        Lucky Number: {this.state.luckyNumber}
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Secret Number</th>
-            <th>Salt(Confirmed)</th>
-            <th>Hash</th>
-            <th>Ranking</th>
-          </tr>
-        </thead>
-        <tbody>
-          {this.state.submitedHashs.map( submitedHash => {
-            return <tr key={submitedHash.name}>
-              <td>{submitedHash.name}</td>
-              <td>{submitedHash.secretNumber}</td>
-              <td>{submitedHash.salt}</td>
-              <td>{submitedHash.hash}</td>
-              <td>{this.state.luckyNumber && rankings.indexOf(submitedHash.secretNumber) + 1}</td>
-            </tr>;
-          })}
-        </tbody>
-      </table>
-    </div>;
+    return <Grid>
+      <Row>
+        <Alert bsStyle='success'>
+          房间创建完成，请将当前网页的地址发给所有参与者进行抽奖。
+        </Alert>
+      </Row>
+      <Row>
+        <Form horizontal>
+          <FormGroup>
+            <Col componentClass={ControlLabel} sm={2}>
+              我的名字
+            </Col>
+            <Col sm={10}>
+              <InputGroup>
+                <FormControl type='text' value={this.state.name} onChange={this.onNameChange.bind(this)} disabled={this.state.state !== 'initially'} />
+                <InputGroup.Button>
+                  <Button bsStyle='success' onClick={this.onSubmit.bind(this)} disabled={this.state.state !== 'initially'}>提交名字</Button>
+                </InputGroup.Button>
+              </InputGroup>
+              <HelpBlock>这个名字将用于在游戏过程中唯一地标识你自己，请选用一个被所有参与者都熟知的名字。</HelpBlock>
+            </Col>
+          </FormGroup>
+        </Form>
+      </Row>
+      <Row>
+        <Table responsive>
+          <thead>
+            <tr>
+              <th>名字</th>
+              <th>选定的数字</th>
+              <th>状态</th>
+              <th>排名</th>
+            </tr>
+          </thead>
+          <tbody>
+            {this.state.submitedHashs.map( submitedHash => {
+              const secretNumberTips = <Tooltip id={`secret-number-${submitedHash.name}`}>
+                abs({submitedHash.secretNumber} - {this.state.luckyNumber}) = {Math.abs(submitedHash.secretNumber - this.state.luckyNumber)}
+              </Tooltip>;
+
+              const secretNumberText = <OverlayTrigger overlay={secretNumberTips} placement='top'>
+                <a>{submitedHash.secretNumber}</a>
+              </OverlayTrigger>;
+
+              const statusTips = <Tooltip id={`status-${submitedHash.name}`}>
+                salt: {submitedHash.salt || 'N/A'}
+              </Tooltip>;
+
+              const statusBlock = <OverlayTrigger overlay={statusTips} placement='top'>
+                <Label bsStyle={submitedHash.salt ? 'success' : 'warning'}>
+                  {submitedHash.salt ? '已确认' : '未确认'}
+                </Label>
+              </OverlayTrigger>;
+
+              return <tr key={submitedHash.name}>
+                <td>{submitedHash.name} (hash: {submitedHash.hash})</td>
+                <td>{secretNumberText}</td>
+                <td>{statusBlock}</td>
+                <td>{this.state.luckyNumber && rankings.indexOf(submitedHash.secretNumber) + 1}</td>
+              </tr>;
+            })}
+          </tbody>
+        </Table>
+      </Row>
+      <Row>
+        <Button bsStyle='warning' onClick={this.onConfirm.bind(this)} disabled={this.state.state !== 'submited'}>确认参与者</Button>
+        <HelpBlock>请等待所有参与者都提交了名字，并确保没有人用不同的名字参与多次、没有不应参加的名字，然后再点击「确认参与者」。可开启开发人员工具查看日志，更多原理解释和源代码见 <a href='https://github.com/jysperm/rollup'>GitHub</a>。</HelpBlock>
+      </Row>
+    </Grid>;
   }
 
   onNameChange({target: {value}}) {
@@ -205,6 +247,8 @@ class Rollupping extends Component {
 
     const secretNumber = randomNumber(0, Math.pow(2, 32));
     const salt = randomString(16);
+
+    console.log(`My secretNumber is ${secretNumber}, salt is ${salt}`);
 
     this.socket.send(JSON.stringify({
       event: 'submitHash',
@@ -249,4 +293,4 @@ function randomNumber(min, max) {
   return Math.ceil(Math.random() * (max - min) + min);
 }
 
-ReactDOM.render(<Rollup />, document.getElementById('react-root'));
+ReactDOM.render(<IndexView />, document.getElementById('react-root'));
