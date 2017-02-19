@@ -170,7 +170,7 @@ class GameView extends Component {
         </Alert>
       </Row>
       <Row>
-        <Form horizontal>
+        <Form horizontal onSubmit={this.onSubmit.bind(this)}>
           <FormGroup>
             <Col componentClass={ControlLabel} sm={2}>
               我的名字
