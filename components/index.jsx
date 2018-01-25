@@ -131,7 +131,7 @@ class GameView extends Component {
               return submitHash.secretNumber;
             })) {
               const secretNumbers = _.map(this.state.submitedHashs, 'secretNumber');
-              const luckyHash = _.sortBy(secretNumbers).join();
+              const luckyHash = md5(_.sortBy(secretNumbers).join());
               const luckyNumber = parseInt(luckyHash.slice(-8), 16);
 
               console.log(`luckyNumber is ${luckyNumber}`);
